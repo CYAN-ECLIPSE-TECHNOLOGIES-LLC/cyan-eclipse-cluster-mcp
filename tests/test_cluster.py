@@ -1,3 +1,7 @@
+# Eclipse Cluster MCP
+# Copyright © 2026 Cyan Eclipse Technologies LLC · cetech.ai
+# Eclipse Cluster K0 — verification-gate test suite.
+
 """Eclipse Cluster K0 — verification-gate test suite.
 
 Runs fully offline against a local stub registry (tests/fixtures.py)
@@ -20,6 +24,7 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(HERE))
 
 import fixtures  # noqa: E402
+import registry  # noqa: E402
 import server  # noqa: E402
 
 
@@ -214,6 +219,60 @@ class TestPolicyAndReceipts(GateCase):
         self.assertEqual(v["verdict"], "FAIL")
 
 
+class TestRegistryDefects(unittest.TestCase):
+    """Bench defects D-C1/D-C2 (2026-10-27 live-registry leg). Offline:
+    the stub, re-cased, reproduces the wire behaviour that masked both
+    defects in the simulator bench."""
+
+    def test_lowercase_www_authenticate_starts_token_flow(self):
+        # D-C1: GHCR delivers the challenge as 'www-authenticate'
+        # (lowercase, observed live 2026-10-26). A case-sensitive
+        # lookup never parsed it, so no token was fetched and every
+        # GHCR manifest fetch returned 401.
+        stub = fixtures.StubRegistry()
+        stub.auth_header_name = "www-authenticate"  # GHCR's wire casing
+        stub.start()
+        try:
+            fixtures.build_image(stub, "cetech/widget", tag="v1")
+            client = registry.RegistryClient(stub.host)
+            resolved = client.resolve_image("cetech/widget", "v1")
+            self.assertTrue(resolved["digest"].startswith("sha256:"))
+            self.assertTrue(
+                any(p.startswith("/token") for _, p in stub.requests),
+                "401 challenge never parsed: no token fetch")
+        finally:
+            stub.stop()
+
+    def test_response_header_names_normalized_lowercase(self):
+        # D-C1, same root cause at the other lookup sites ('Location',
+        # 'Content-Type'): names are normalized at the wire boundary.
+        stub = fixtures.StubRegistry().start()
+        try:
+            client = registry.RegistryClient(stub.host)
+            status, headers, _ = client._raw_get(
+                f"http://{stub.host}/v2/cetech/widget/manifests/v1",
+                {}, allow_redirect=False)
+            self.assertEqual(status, 401)
+            self.assertIn("www-authenticate", headers)
+            self.assertTrue(all(k == k.lower() for k in headers))
+        finally:
+            stub.stop()
+
+    def test_docker_io_resolves_to_registry_1_endpoint(self):
+        # D-C2: the parsed registry stays 'docker.io' (the name policy
+        # allowlists and signed payloads reference), but the client
+        # must talk to registry-1.docker.io, not the docker.io website.
+        for ref in ("docker.io/library/hello-world:latest",
+                    "library/hello-world", "hello-world"):
+            parsed = registry.parse_image_ref(ref)
+            self.assertEqual(parsed["registry"], "docker.io")
+            self.assertEqual(parsed["repository"], "library/hello-world")
+            client = registry.RegistryClient(parsed["registry"])
+            self.assertEqual(client.base, "https://registry-1.docker.io")
+        self.assertEqual(registry.RegistryClient("ghcr.io").base,
+                         "https://ghcr.io")
+
+
 @unittest.skipUnless(os.environ.get("ECLIPSE_CLUSTER_LIVE"),
                      "live registry test is opt-in (ECLIPSE_CLUSTER_LIVE=1)")
 class TestLiveRegistry(GateCase):
@@ -242,3 +301,5 @@ class TestLiveRegistry(GateCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# Eclipse Cluster MCP · © 2026 Cyan Eclipse Technologies LLC · cetech.ai

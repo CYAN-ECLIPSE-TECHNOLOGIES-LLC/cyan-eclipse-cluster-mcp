@@ -1,3 +1,7 @@
+# Eclipse Cluster MCP
+# Copyright © 2026 Cyan Eclipse Technologies LLC · cetech.ai
+# Minimal OCI / Docker registry read client for Eclipse Cluster K0.
+
 """Minimal OCI / Docker registry read client for Eclipse Cluster K0.
 
 Powered by Cyan Eclipse Technologies (cetech.ai).
@@ -39,6 +43,22 @@ INDEX_TYPES = {
     "application/vnd.oci.image.index.v1+json",
     "application/vnd.docker.distribution.manifest.list.v2+json",
 }
+# Canonical registry API endpoints for registries whose API host
+# differs from the name image references (and policy allowlists) use.
+# docker.io is Docker Hub's website (it redirects to www.docker.com),
+# not a registry endpoint; the Hub API lives at registry-1.docker.io.
+_REGISTRY_ENDPOINTS = {"docker.io": "registry-1.docker.io"}
+
+
+def _headers_dict(headers) -> dict:
+    """Response headers as a plain dict with lowercased names.
+
+    HTTP header names are case-insensitive, but registries do not
+    agree on casing on the wire (GHCR sends 'www-authenticate' in
+    lowercase). Normalize here, at the wire boundary; look headers
+    up by their lowercase name everywhere else.
+    """
+    return {k.lower(): v for k, v in dict(headers or {}).items()}
 
 
 class RegistryError(Exception):
@@ -85,9 +105,10 @@ def _parse_auth_challenge(header: str) -> dict:
 class RegistryClient:
     def __init__(self, registry: str, timeout: int = 20):
         self.registry = registry
-        scheme = "http" if registry.startswith(("127.0.0.1", "localhost")) \
+        host = _REGISTRY_ENDPOINTS.get(registry, registry)
+        scheme = "http" if host.startswith(("127.0.0.1", "localhost")) \
             else "https"
-        self.base = f"{scheme}://{registry}"
+        self.base = f"{scheme}://{host}"
         self.timeout = timeout
         self._tokens = {}  # (repository, scope) -> token
 
@@ -102,9 +123,10 @@ class RegistryClient:
             opener = urllib.request.build_opener(_NoRedirect)
         try:
             with opener.open(req, timeout=self.timeout) as resp:
-                return resp.status, dict(resp.headers), resp.read()
+                return resp.status, _headers_dict(resp.headers), resp.read()
         except urllib.error.HTTPError as e:
-            return e.code, dict(e.headers or {}), e.read() if e.fp else b""
+            return e.code, _headers_dict(e.headers), \
+                e.read() if e.fp else b""
         except urllib.error.URLError as e:
             raise RegistryError(f"registry unreachable: {e.reason}")
         except (TimeoutError, OSError) as e:
@@ -132,7 +154,7 @@ class RegistryClient:
                 url, headers, allow_redirect=False)
             if status == 401:
                 challenge = _parse_auth_challenge(
-                    resp_headers.get("WWW-Authenticate", ""))
+                    resp_headers.get("www-authenticate", ""))
                 realm = challenge.get("realm")
                 if not realm:
                     return status, resp_headers, body
@@ -142,7 +164,7 @@ class RegistryClient:
                 self._tokens[(repository, scope)] = token
                 continue
             if status in (301, 302, 303, 307, 308):
-                location = resp_headers.get("Location")
+                location = resp_headers.get("location")
                 if not location:
                     return status, resp_headers, body
                 url = urllib.parse.urljoin(url, location)
@@ -185,7 +207,7 @@ class RegistryClient:
         # served, not only the registry's header claim.
         digest = "sha256:" + hashlib.sha256(body).hexdigest()
         return {"body": body, "digest": digest,
-                "media_type": (headers.get("Content-Type") or "")
+                "media_type": (headers.get("content-type") or "")
                 .split(";")[0].strip()}
 
     def resolve_image(self, repository: str, ref: str) -> dict:
@@ -246,3 +268,5 @@ class RegistryClient:
             return json.loads(body).get("manifests", [])
         except Exception:
             return None
+
+# Eclipse Cluster MCP · © 2026 Cyan Eclipse Technologies LLC · cetech.ai

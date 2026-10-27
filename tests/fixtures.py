@@ -76,6 +76,10 @@ class StubRegistry:
         self.requests = []  # (method, path) — tests assert on contact
         self.httpd = None
         self.host = None
+        # Name the 401 challenge is sent under. Real registries do not
+        # agree on casing (GHCR sends 'www-authenticate' lowercase);
+        # tests set this to reproduce that wire casing.
+        self.auth_header_name = "WWW-Authenticate"
 
     # -- fixture population ----------------------------------------------
     def add_blob(self, repo, data: bytes) -> str:
@@ -120,7 +124,7 @@ class StubRegistry:
                     realm = f"http://{stub.host}/token"
                     scope = "repository:pull"
                     return self._send(401, b"{}", extra={
-                        "WWW-Authenticate":
+                        stub.auth_header_name:
                             f'Bearer realm="{realm}",service="stub",'
                             f'scope="{scope}"'})
                 if "/manifests/" in rest:
