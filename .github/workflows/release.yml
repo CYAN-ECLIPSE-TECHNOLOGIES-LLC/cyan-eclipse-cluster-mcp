@@ -1,0 +1,33 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build distributable (git archive of the tag)
+        run: |
+          name="eclipse-cluster-mcp-${GITHUB_REF_NAME}"
+          git archive --format=zip --prefix="${name}/" -o "${name}.zip" HEAD
+          ls -la "${name}.zip"
+
+      - name: Publish GitHub Release with artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            --title "${GITHUB_REF_NAME}" \
+            --generate-notes \
+            "eclipse-cluster-mcp-${GITHUB_REF_NAME}.zip"

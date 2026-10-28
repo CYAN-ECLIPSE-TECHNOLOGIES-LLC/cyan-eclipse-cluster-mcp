@@ -2,7 +2,31 @@
  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
  "name": "io.github.CYAN-ECLIPSE-TECHNOLOGIES-LLC/cluster",
  "title": "Eclipse Cluster MCP",
- "description": "Signed images, governed runtimes \u2014 the gate runs first: no verified signature and provenance, no",
+ "description": "Signed images, governed runtimes \u2014 the gate runs first",
  "version": "0.1.0",
- "websiteUrl": "https://eclipsebazaar.com"
+ "websiteUrl": "https://eclipsebazaar.com",
+ "repository": {
+  "source": "github",
+  "url": "https://github.com/CYAN-ECLIPSE-TECHNOLOGIES-LLC/eclipse-cluster-mcp"
+ },
+ "packages": [
+  {
+   "registryType": "pypi",
+   "identifier": "eclipse-cluster",
+   "version": "0.1.0",
+   "runtimeHint": "uvx",
+   "transport": {
+    "type": "stdio"
+   }
+  }
+ ],
+ "icons": [
+  {
+   "src": "https://raw.githubusercontent.com/CYAN-ECLIPSE-TECHNOLOGIES-LLC/eclipse-cluster-mcp/main/icon-512.png",
+   "mimeType": "image/png",
+   "sizes": [
+    "512x512"
+   ]
+  }
+ ]
 }

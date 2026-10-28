@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Byte-compile all Python sources
+        run: python -m compileall -q .
+
+      - name: Validate JSON files
+        run: |
+          for f in *.json; do
+            [ -e "$f" ] || continue
+            python -m json.tool "$f" > /dev/null && echo "OK $f"
+          done
+
+      - name: MCP initialize handshake smoke
+        run: |
+          printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"ci","version":"0"}}}' | timeout 30 python server.py | grep -q '"result"'
