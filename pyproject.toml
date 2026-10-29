@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "eclipse-cluster"
+name = "cyan-eclipse-cluster"
 version = "0.1.0"
 description = "Signed images, governed runtimes \u2014 the gate runs first: no verified signature and provenance, no workload."
 readme = "PYPI_README.md"

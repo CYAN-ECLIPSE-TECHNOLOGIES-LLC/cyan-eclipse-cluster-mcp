@@ -1,4 +1,4 @@
-# OWNER-HANDS - eclipse-cluster PyPI launch
+# OWNER-HANDS - cyan-eclipse-cluster PyPI launch (renamed from eclipse-cluster, 2026-10-28)
 
 Everything in this file is done **by the owner, in the owner's
 browser**. The package is built and locally proven (wheel + sdist,
@@ -9,14 +9,14 @@ project yet.
 > **Stop rule:** no step below creates or hands over an API token.
 > Publishing runs on Trusted Publishing (OIDC) only.
 
-## Trusted Publisher for `eclipse-cluster` (pending publisher)
+## Trusted Publisher for `cyan-eclipse-cluster` (pending publisher)
 
 On <https://pypi.org/manage/account/publishing/> - "Add a new pending
 publisher" - **GitHub** tab. Enter these strings **exactly**:
 
 | Field | Value |
 |---|---|
-| PyPI Project Name | `eclipse-cluster` |
+| PyPI Project Name | `cyan-eclipse-cluster` |
 | GitHub Repository Owner | `CYAN-ECLIPSE-TECHNOLOGIES-LLC` |
 | GitHub Repository Name | `eclipse-cluster-mcp` |
 | GitHub Workflow Name | `publish-pypi.yml` |

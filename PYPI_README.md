@@ -1,4 +1,4 @@
-# eclipse-cluster
+# cyan-eclipse-cluster
 
 mcp-name: io.github.CYAN-ECLIPSE-TECHNOLOGIES-LLC/cluster
 
@@ -7,14 +7,14 @@ mcp-name: io.github.CYAN-ECLIPSE-TECHNOLOGIES-LLC/cluster
 ## Run it
 
 ```console
-$ pip install eclipse-cluster
+$ pip install cyan-eclipse-cluster
 $ eclipse-cluster           # MCP over stdio, Python stdlib only
 ```
 
 MCP client config:
 
 ```json
-{ "mcpServers": { "eclipse-cluster": { "command": "uvx", "args": ["eclipse-cluster"] } } }
+{ "mcpServers": { "cyan-eclipse-cluster": { "command": "uvx", "args": ["--from", "cyan-eclipse-cluster", "eclipse-cluster"] } } }
 ```
 
 ## Tools (3)
